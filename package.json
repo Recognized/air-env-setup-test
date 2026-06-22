@@ -4,7 +4,6 @@
   "private": true,
   "description": "Minimal app that requires secrets, for testing Air environment setup.",
   "scripts": {
-    "start": "node app.js",
-    "verify": "bash .air/cloud/startup.sh"
+    "start": "node app.js"
   }
 }
