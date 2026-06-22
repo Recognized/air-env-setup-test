@@ -1,0 +1,10 @@
+{
+  "name": "air-env-setup-test",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal app that requires secrets, for testing Air environment setup.",
+  "scripts": {
+    "start": "node app.js",
+    "verify": "bash .air/cloud/startup.sh"
+  }
+}
