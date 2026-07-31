@@ -6,7 +6,7 @@ cd "$repo_root"
 
 # Prime npm's cache even though this deliberately minimal app currently has no
 # third-party dependencies.
-npm install --ignore-scripts
+npm install --ignore-scripts --package-lock=false
 
 processes="$(ps -ax -o args= 2>/dev/null || true)"
 if grep -q 'dind.sh air-workspace-start.sh' <<<"$processes"; then
