@@ -17,7 +17,7 @@ log() { echo "[startup] $*"; }
 # --- mode detection ---------------------------------------------------------
 _ps="$(ps -ax -o args= 2>/dev/null || true)"
 if grep -q 'dind.sh air-workspace-start.sh' <<<"$_ps"; then WARMUP=; else WARMUP=1; fi
-log "mode: ${WARMUP:+WARMUP}${WARMUP:-TASK}  repo: $REPO_DIR  port: $PORT"
+log "mode: $([ -n "${WARMUP:-}" ] && echo WARMUP || echo TASK)  repo: $REPO_DIR  port: $PORT"
 
 # --- healthcheck ------------------------------------------------------------
 # Asserts the environment works the way a real task needs it to: node/npm usable,
