@@ -1,61 +1,47 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "Starting environment setup..."
+if [ "${AIR_STARTUP_MODE:-}" = warmup ]; then WARMUP=1; else WARMUP=; fi
 
-# Determine startup mode
-if [ "${AIR_STARTUP_MODE:-}" = warmup ]; then
-  WARMUP=1
-else
-  WARMUP=
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+PORT="${PORT:-3000}"
+APP_LOG=/tmp/app.log
+
+cd "$REPO_DIR"
+echo "[startup] node $(node --version), npm $(npm --version), mode=${AIR_STARTUP_MODE:-unset}"
+
+if [ -z "${API_KEY:-}" ] || [ -z "${DATABASE_PASSWORD:-}" ]; then
+  echo "[startup] ERROR: API_KEY and DATABASE_PASSWORD must be set (fill them on the environment configuration page)" >&2
+  exit 1
 fi
 
-# Install dependencies
-echo "Installing npm dependencies..."
-npm install
-
-# Create .env file with required secrets
-echo "Setting up environment variables..."
-cat > .env <<EOF
-API_KEY=${API_KEY}
-DATABASE_PASSWORD=${DATABASE_PASSWORD}
-PORT=${PORT:-3000}
-EOF
-
-# Start the app in the background
-echo "Starting application..."
-nohup npm start >/tmp/app.log 2>&1 &
+echo "[startup] starting app on port $PORT (log: $APP_LOG)"
+nohup npm start >"$APP_LOG" 2>&1 &
 APP_PID=$!
-echo "Application started with PID $APP_PID"
+echo "[startup] app PID $APP_PID"
 
-# Health check function - tests if the app is ready
 healthcheck() {
-  local max_attempts=30
-  local attempt=0
-  local port=${PORT:-3000}
-
-  echo "Waiting for application to be ready on port $port..."
-
-  while [ $attempt -lt $max_attempts ]; do
-    if curl -sf http://localhost:$port/ > /dev/null 2>&1; then
-      echo "✓ Application is ready"
+  echo "[healthcheck] waiting for http://localhost:$PORT/ to answer 'ok'"
+  local n=0 body
+  while true; do
+    if ! kill -0 "$APP_PID" 2>/dev/null; then
+      echo "[healthcheck] app process exited; last log lines:" >&2
+      tail -n 20 "$APP_LOG" >&2 || true
+      return 1
+    fi
+    body="$(curl -s --max-time 5 "http://localhost:$PORT/" || true)"
+    if [ "$body" = "ok" ]; then
+      echo "[healthcheck] app is serving on port $PORT"
       return 0
     fi
-
-    attempt=$((attempt + 1))
-    echo "  Attempt $attempt/$max_attempts - waiting..."
-    sleep 2
+    n=$((n + 1))
+    if [ $((n % 5)) -eq 0 ]; then echo "[healthcheck] still waiting (${n}s)"; fi
+    sleep 1
   done
-
-  echo "✗ Application failed to start within timeout"
-  echo "Recent logs:"
-  tail -20 /tmp/app.log
-  return 1
 }
 
-# In warmup mode, wait for the app to be ready before returning
-if [ -n "${WARMUP:-}" ]; then
+if [ -n "$WARMUP" ]; then
   healthcheck
 fi
 
-echo "Setup complete"
+echo "[startup] done"
