@@ -40,8 +40,9 @@ echo "Node version: $(node --version)"
 npm --version >/dev/null
 
 echo "Starting app on port $APP_PORT..."
-PORT="$APP_PORT" npm start >"$APP_LOG" 2>&1 &
+nohup env PORT="$APP_PORT" npm start >"$APP_LOG" 2>&1 </dev/null &
 APP_PID=$!
+disown "$APP_PID" 2>/dev/null || true
 echo "App process started with pid $APP_PID; logs: $APP_LOG"
 
 if [ -n "$WARMUP" ]; then
