@@ -26,7 +26,7 @@ log "node $(node -v), npm $(npm -v)"
 if [ -f package-lock.json ]; then
   log "npm ci"; npm ci --no-audit --no-fund
 else
-  log "npm install"; npm install --no-audit --no-fund
+  log "npm install"; npm install --no-audit --no-fund --no-package-lock
 fi
 
 # --- Secrets check -----------------------------------------------------------
